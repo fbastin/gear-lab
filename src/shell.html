@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gear Lab: Physics for kids</title>
+<meta name="description" content="Play with gears: build gear trains, solve gear puzzles, try chains, belts, worm gears and a cog railway, and shift gears on a bike.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sky: #e7eef7;
+    --ink: #17233d;
+    --red: #e23b2e;
+    --blue: #2464d6;
+    --purple: #7a62c9;
+    --orange: #ff8a1f;
+    --sticker: #ffd23f;
+    --mint: #c9eedb;
+    --note: #fff3b0;
+    --font: "Baloo 2", "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background-color: var(--sky);
+    background-image: radial-gradient(rgba(23, 35, 61, .08) 1.2px, transparent 1.4px);
+    background-size: 22px 22px;
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 18px;
+    line-height: 1.45;
+    -webkit-text-size-adjust: 100%;
+  }
+  .app {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: max(14px, env(safe-area-inset-top)) clamp(10px, 3vw, 24px) max(28px, env(safe-area-inset-bottom));
+  }
+
+  /* Header: the title sits between two meshing gears */
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; margin: 8px 0 18px; }
+  .title p { margin: 8px 0 0 4px; font-size: 16px; font-weight: 600; opacity: .72; }
+  .bar {
+    display: inline-flex; align-items: center; gap: .3em;
+    margin: 0; padding: .02em .3em;
+    font-size: clamp(26px, 4.8vw, 46px); font-weight: 800; line-height: 1.2; letter-spacing: .01em;
+    color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, .2);
+    background: var(--purple);
+    border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 5px 0 var(--ink);
+  }
+  .cog { width: .85em; height: .85em; flex: none; overflow: visible; }
+  .cog path { stroke: var(--ink); stroke-width: 1.6; stroke-linejoin: round; }
+  .cog.a path { fill: var(--sticker); } .cog.b path { fill: var(--orange); }
+  .cog circle { fill: var(--ink); }
+  .cog.a { animation: spin 6s linear infinite; } .cog.b { animation: spin 6s linear infinite reverse; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  button { font: inherit; color: inherit; }
+  .chunky {
+    border: 2.5px solid var(--ink); border-radius: 12px; background: #fff;
+    box-shadow: 0 4px 0 var(--ink);
+    padding: 5px 14px; font-weight: 700; cursor: pointer;
+    transition: transform .06s, box-shadow .06s;
+    touch-action: manipulation;
+  }
+  .chunky:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+  .chunky:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+
+  .settings { display: flex; gap: 10px; margin-left: auto; align-self: flex-start; }
+  .tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; flex-basis: 100%; }
+  .tab { font-size: 17px; }
+  .tab[aria-pressed="true"] { background: var(--sticker); }
+  .sound, .lang { min-width: 46px; height: 42px; padding: 0 8px; font-size: 18px; }
+
+  /* Stage */
+  .stage {
+    position: relative; overflow: hidden; background: #fff;
+    border: 3px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink);
+  }
+  canvas {
+    display: block; width: 100%; aspect-ratio: 16 / 10;
+    touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+  }
+  .hud { position: absolute; top: 10px; left: 10px; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; }
+  .chip {
+    background: rgba(255, 255, 255, .94); border: 2px solid var(--ink); border-radius: 999px;
+    padding: 0 12px; font-weight: 700; font-size: clamp(12px, 1.8vw, 16px);
+  }
+  .toast {
+    position: absolute; left: 50%; bottom: 12px; width: max-content; max-width: 88%;
+    transform: translate(-50%, 16px); opacity: 0; pointer-events: none;
+    background: var(--ink); color: #fff; border-radius: 14px; padding: 5px 16px;
+    font-weight: 600; font-size: clamp(13px, 1.9vw, 17px); text-align: center;
+    transition: opacity .2s, transform .2s;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: 10px; background: rgba(23, 35, 61, .3); }
+  .overlay[hidden] { display: none; }
+  .panel {
+    max-width: 460px; text-align: center; background: #fff;
+    border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 6px 0 var(--ink);
+    padding: clamp(8px, 2.4vw, 22px) clamp(14px, 3vw, 30px);
+  }
+  .panel h3 { margin: 0; font-size: clamp(19px, 3.2vw, 30px); line-height: 1.15; }
+  .panel p { margin: 2px 0 12px; font-size: clamp(14px, 2vw, 18px); }
+  .panel .stars { font-size: clamp(24px, 5vw, 44px); line-height: 1.2; }
+  .panel .stars .off { filter: grayscale(1); opacity: .3; }
+  .panel .row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .go { background: var(--sticker); }
+
+  /* Toolbar under the stage */
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 20px 0 4px; min-height: 44px; }
+  .tool { font-size: 16px; padding: 4px 12px; }
+  .tool[aria-pressed="true"] { background: var(--mint); }
+  .tool:disabled { opacity: .45; cursor: not-allowed; }
+  .tool.good, .tool.good:disabled { background: var(--mint); opacity: 1; border-color: #1c7a55; }
+  .tool.bad, .tool.bad:disabled { background: #ffd6cf; opacity: 1; }
+  .tool.go { background: var(--sticker); }
+  .qtext { flex: 0 0 100%; margin: 0 0 2px; font-size: clamp(18px, 2.4vw, 22px); font-weight: 600; line-height: 1.3; }
+  .break { flex-basis: 100%; height: 0; }
+  .qtext.small { flex-basis: auto; margin: 0; font-size: 15px; font-weight: 600; opacity: .65; }
+  .sep { width: 2px; height: 28px; margin: 0 4px; border-radius: 2px; background: rgba(23, 35, 61, .18); }
+
+  /* How to play + sticky note */
+  .info { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 26px; align-items: start; margin-top: 20px; }
+  .info h2 { margin: 0 0 4px; font-size: 22px; line-height: 1.2; }
+  .how p { margin: 0; max-width: 62ch; }
+  .note {
+    background: var(--note); padding: 14px 18px 16px;
+    border-radius: 3px 3px 22px 3px; transform: rotate(-1.2deg);
+    box-shadow: 0 12px 18px -12px rgba(23, 35, 61, .55);
+  }
+  .note p { margin: 0 0 12px; min-height: 3em; }
+  .note .tool { background: #fffbe0; }
+  footer { margin-top: 28px; font-size: 14px; }
+  footer p { margin: 8px 0 0; opacity: .6; }
+  footer .links { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 16px; font-weight: 700; }
+  footer a { color: var(--blue); }
+
+  @media (max-width: 720px) {
+    body { font-size: 17px; }
+    .tab { font-size: 15px; padding: 4px 10px; }
+    .tool { font-size: 14px; padding: 3px 9px; }
+    .info { grid-template-columns: 1fr; gap: 18px; }
+    .sep, .qtext.small { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cog.a, .cog.b { animation: none; }
+    .toast, .chunky { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="title">
+      <h1 class="bar"><svg class="cog a" viewBox="-17 -17 34 34" aria-hidden="true"><path d="M9.4 -2.5L15.6 -1.1L15.6 1.1L9.4 2.5L9.1 3.5L13.2 8.3L11.9 10.0L6.1 7.6L5.3 8.2L5.9 14.5L3.8 15.1L0.5 9.7L-0.5 9.7L-3.8 15.1L-5.9 14.5L-5.3 8.2L-6.1 7.6L-11.9 10.0L-13.2 8.3L-9.1 3.5L-9.4 2.5L-15.6 1.1L-15.6 -1.1L-9.4 -2.5L-9.1 -3.5L-13.2 -8.3L-11.9 -10.0L-6.1 -7.6L-5.3 -8.2L-5.9 -14.5L-3.8 -15.1L-0.5 -9.7L0.5 -9.7L3.8 -15.1L5.9 -14.5L5.3 -8.2L6.1 -7.6L11.9 -10.0L13.2 -8.3L9.1 -3.5Z"/><circle r="3.5"/></svg><span data-i18n="title">Gear Lab</span><svg class="cog b" viewBox="-17 -17 34 34" aria-hidden="true"><path d="M9.4 -2.5L15.6 -1.1L15.6 1.1L9.4 2.5L9.1 3.5L13.2 8.3L11.9 10.0L6.1 7.6L5.3 8.2L5.9 14.5L3.8 15.1L0.5 9.7L-0.5 9.7L-3.8 15.1L-5.9 14.5L-5.3 8.2L-6.1 7.6L-11.9 10.0L-13.2 8.3L-9.1 3.5L-9.4 2.5L-15.6 1.1L-15.6 -1.1L-9.4 -2.5L-9.1 -3.5L-13.2 -8.3L-11.9 -10.0L-6.1 -7.6L-5.3 -8.2L-5.9 -14.5L-3.8 -15.1L-0.5 -9.7L0.5 -9.7L3.8 -15.1L5.9 -14.5L5.3 -8.2L6.1 -7.6L11.9 -10.0L13.2 -8.3L9.1 -3.5Z"/><circle r="3.5"/></svg></h1>
+      <p data-i18n="subtitle">Physics for kids: turn, mesh and shift gears</p>
+    </div>
+    <div class="settings">
+      <button class="chunky lang" type="button" id="langBtn">FR</button>
+      <button class="chunky sound" type="button" id="soundBtn" aria-pressed="true" data-i18n-aria="sound">🔊</button>
+    </div>
+    <nav class="tabs" data-i18n-aria="nav">
+      <button class="chunky tab" type="button" data-mode="workshop" aria-pressed="true"><span aria-hidden="true">⚙️</span> <span data-i18n="tab_workshop">Workshop</span></button>
+      <button class="chunky tab" type="button" data-mode="puzzles" aria-pressed="false"><span aria-hidden="true">🧩</span> <span data-i18n="tab_puzzles">Puzzles</span></button>
+      <button class="chunky tab" type="button" data-mode="machines" aria-pressed="false"><span aria-hidden="true">🔩</span> <span data-i18n="tab_machines">Machines</span></button>
+      <button class="chunky tab" type="button" data-mode="bike" aria-pressed="false"><span aria-hidden="true">🚲</span> <span data-i18n="tab_bike">Bike ride</span></button>
+      <button class="chunky tab" type="button" data-mode="quiz" aria-pressed="false"><span aria-hidden="true">📝</span> <span data-i18n="tab_quiz">Quiz</span></button>
+    </nav>
+  </header>
+
+  <main>
+    <div class="stage">
+      <canvas id="stage" role="img" aria-label="Gear workshop"></canvas>
+      <div class="hud" id="hud"></div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      <div class="overlay" id="overlay" hidden></div>
+    </div>
+    <div class="toolbar" id="toolbar"></div>
+    <section class="info">
+      <div class="how">
+        <h2 id="howTitle" data-i18n="how">How to play</h2>
+        <p id="howText"></p>
+      </div>
+      <aside class="note" aria-live="polite">
+        <h2 id="factTitle" data-i18n="fact">Did you know?</h2>
+        <p id="factText"></p>
+        <button class="chunky tool" type="button" id="nextFact" data-i18n="another">Tell me another</button>
+      </aside>
+    </section>
+  </main>
+  <footer>
+    <nav class="links">
+      <a data-href="gears-lesson.html?lang={lang}" href="gears-lesson.html" data-i18n="lessonLink">Gears lesson (slides)</a>
+      <a data-href="../index.php?lang={lang}" href="../index.php" data-i18n="backLink">← Back to Physics for Kids</a>
+    </nav>
+    <p data-i18n="footer">Gear Lab is part of Physics for kids on slashbin.net.</p>
+  </footer>
+</div>
+<noscript><p style="text-align:center">Gear Lab needs JavaScript turned on. / Le labo des engrenages a besoin de JavaScript.</p></noscript>
